@@ -1,8 +1,12 @@
 import psycopg2
+import psycopg2.extras
 from config import host, user, password, db_name
 
-try:
-    # connect to exist database
+
+# connect to exist database
+
+
+def add_to_sql():
     connection = psycopg2.connect(
         host=host,
         user=user,
@@ -11,17 +15,15 @@ try:
     )
     connection.autocommit = True
 
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT version();"
-        )
+    cur = connection.cursor()
+    with open('data.csv', 'r', encoding="utf-8") as f:
+        next(f)
+        cur.copy_from(f, 'tasks', columns=(
+            'number_task', 'name_task', 'rating', 'count_vin'), sep=",")
 
-        print(f"Server version: {cursor.fetchone()}")
+    with open('data_groups.csv', 'r', encoding="utf-8") as fa:
+        next(fa)
+        cur.copy_from(fa, 'groups_task', columns=(
+            'groups_task'), sep=",")
 
-except Exception as _ex:
-    print("[INFO] Error while working with PostgreSQL", _ex)
-finally:
-    if connection:
-        # cursor.close()
-        connection.close()
-        print("[INFO] PostgreSQL connection closed")
+    connection.commit()
